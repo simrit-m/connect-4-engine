@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Tile from './Tile';
-import { zobristHash } from './zobrist'; // Ensure zobristHash is imported
+import { zobristHash } from './zobrist';
+import axios from 'axios';
 
 const ROWS = 6;
 const COLS = 7;
@@ -18,6 +19,22 @@ const Board = () => {
   const [currentPlayer, setCurrentPlayer] = useState('Player');
   const [gameOver, setGameOver] = useState(false);
   const [aiFirstMove, setAiFirstMove] = useState(true);
+  const [winRecord, setWinRecord] = useState({
+    playerWins: 0,
+    aiWins: 0,
+    ties: 0,
+  });
+
+  useEffect(() => {
+    axios
+      .get('http://127.0.0.1:5000/api/win-record')
+      .then((response) => {
+        setWinRecord(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching win record:', error);
+      });
+  }, []);
 
   const transpositionTable = {};
 
@@ -151,6 +168,7 @@ const Board = () => {
           const winner = checkWinner(newBoard);
           if (winner) {
             setGameOver(true);
+            updateWinRecord(winner);
             if (winner === 'Tie') {
               alert("It's a tie!");
             } else {
@@ -184,10 +202,22 @@ const Board = () => {
     const winner = checkWinner(aiBoard);
     if (winner) {
       setGameOver(true);
+      updateWinRecord(winner);
       alert(`${winner} wins!`);
     } else {
       setCurrentPlayer('Player');
     }
+  };
+
+  const updateWinRecord = (winner) => {
+    axios
+      .post('http://127.0.0.1:5000/api/update-win-record', { winner })
+      .then((response) => {
+        setWinRecord(response.data); // Update win record in the state
+      })
+      .catch((error) => {
+        console.error('Error updating win record:', error);
+      });
   };
 
   const resetGame = () => {
@@ -198,16 +228,43 @@ const Board = () => {
   };
 
   return (
-    <div className="board">
-      {board.map((row, rowIndex) => (
-        <div key={rowIndex} className="row">
-          {row.map((cell, colIndex) => (
-            <Tile key={colIndex} row={rowIndex} col={colIndex} value={cell} onTileClick={handleMove} />
-          ))}
-        </div>
-      ))}
-      <div>{gameOver ? "Game Over" : `${currentPlayer}'s turn`}</div>
-      <button onClick={resetGame}>Reset Game</button>
+    <div className="container my-4">
+      {/* Win Record */}
+      <div className="text-center mb-4">
+        <h4>Win Record:</h4>
+        <p>Player: {winRecord.playerWins}</p>
+        <p>AI: {winRecord.aiWins}</p>
+        <p>Ties: {winRecord.ties}</p>
+      </div>
+
+
+      {/* Game Status */}
+      <div className="mb-4 text-center">
+        <h3>{gameOver ? "Game Over" : `${currentPlayer}'s turn`}</h3>
+      </div>
+
+      {/* Board */}
+      <div className="board">
+        {board.map((row, rowIndex) => (
+          <div key={rowIndex} className="row justify-content-center">
+            {row.map((cell, colIndex) => (
+              <Tile
+                key={colIndex}
+                row={rowIndex}
+                col={colIndex}
+                value={cell}
+                onTileClick={handleMove}
+                className={`tile ${cell === 'Player' ? 'bg-warning' : cell === 'AI' ? 'bg-danger' : ''}`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Reset Button */}
+      <div className="text-center mt-4">
+        <button onClick={resetGame} className="btn btn-primary">Reset Game</button>
+      </div>
     </div>
   );
 };

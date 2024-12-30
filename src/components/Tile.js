@@ -1,19 +1,19 @@
 import React from 'react';
 
 const Tile = ({ value, row, col, onTileClick }) => {
+    const tileClass =
+    value === 'Player' ? 'bg-red' : value === 'AI' ? 'bg-yellow' : 'bg-white'; // bg-white for empty tile
+
   return (
     <div
-      className={`tile ${value ? value : 'empty'}`}
+      className={`tile ${tileClass} rounded-circle m-1`}
       style={{
         width: '50px',
         height: '50px',
-        border: '1px solid black',
-        backgroundColor: value === 'Player' ? 'red' : value === 'AI' ? 'yellow' : 'lightgray',
+        cursor: 'pointer',
       }}
-      onClick={() => onTileClick(col)} // Call the passed function on click
-    >
-      {/* Render tile color based on value */}
-    </div>
+      onClick={() => onTileClick(col)}
+    />
   );
 };
 
